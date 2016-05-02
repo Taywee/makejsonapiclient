@@ -36,6 +36,7 @@ class {name}(object):
 {i}{i}{i}password=password,
 {i}{i}{i})
 {i}{i}self.urlquote = httpclass.urlquote
+{i}{i}self.queryencode = httpclass.queryencode
 '''.format(
             name=classname,
             defaultclass=(' = {}'.format(defaultclass) if defaultclass else ''),
@@ -71,7 +72,7 @@ class {name}(object):
         else:
             basename = endpoint['endpoint']
 
-        queryargs = _formatpattern.findall(endpoint['endpoint'])
+        urlargs = _formatpattern.findall(endpoint['endpoint'])
 
         # Get or infer methods
         if endpoint.get('methods'):
@@ -84,6 +85,8 @@ class {name}(object):
 
         data_args = endpoint.get('data-args', [])
         data_options = endpoint.get('data-options', [])
+        query_args = endpoint.get('query-args', [])
+        query_options = endpoint.get('query-options', [])
 
         defaults = endpoint['defaults'] if 'defaults' in endpoint else dict()
 
@@ -94,7 +97,7 @@ class {name}(object):
             defname = '{meth}_{name}'.format(meth=method.lower(), name=basename.lower().replace('-', '_'))
             args = ['self']
 
-            for arg in queryargs:
+            for arg in urlargs:
                 if arg not in usedvars:
                     argitem = arg.lower().replace('-', '_')
                     if arg in defaults:
@@ -102,6 +105,26 @@ class {name}(object):
 
                     args.append(argitem)
                     usedvars.add(arg)
+
+            for arg in query_args:
+                if arg not in usedvars:
+                    argitem = arg.lower().replace('-', '_')
+                    if arg in defaults:
+                        argitem += ' = {}'.format(repr(defaults[arg]))
+
+                    args.append(argitem)
+                    usedvars.add(arg)
+
+            for option in query_options:
+                if option not in usedvars:
+                    optitem = option.lower().replace('-', '_')
+                    if optitem in defaults:
+                        optitem += ' = {}'.format(repr(defaults[option]))
+                    else:
+                        optitem += ' = _NO_VALUE'
+
+                    args.append(optitem)
+                    usedvars.add(option)
 
             if datamethod:
                 for arg in data_args:
@@ -129,11 +152,24 @@ class {name}(object):
             if 'description' in endpoint:
                 outfile.write("{i}{i}'''{description}'''\n\n".format(i=indent, description=endpoint['description']))
 
-            outfile.write('{i}{i}_api_endpoint = "{prefix}{endpoint}".format({queryargs})\n'.format(
+            if query_args or query_options:
+                outfile.write('{i}{i}_all_query_args = {{{args}}}\n'.format(
+                    i=indent,
+                    args=', '.join("'{arg}': {var}".format(arg=arg, var=arg.lower().replace('-', '_')) for arg in (query_args + query_options))))
+                outfile.write('{i}{i}_query_args = {{k: v for k, v in _all_query_args.items() if v != self._NO_VALUE}}\n'.format(i=indent))
+                outfile.write('{i}{i}if _query_args:\n'.format(i=indent))
+                outfile.write('{i}{i}{i}_query_string = "?" + self.queryencode(_query_args)\n'.format(i=indent))
+                outfile.write('{i}{i}else:\n'.format(i=indent))
+                outfile.write('{i}{i}{i}_query_string = ""\n'.format(i=indent))
+            else:
+                outfile.write('{i}{i}_query_string = ""\n'.format(i=indent))
+
+
+            outfile.write('{i}{i}_api_endpoint = "{prefix}{endpoint}{{querystring}}".format(querystring=_query_string, {urlargs})\n'.format(
                 i=indent,
                 prefix=prefix,
                 endpoint=endpoint['endpoint'],
-                queryargs=', '.join('{arg}=self.urlquote({arg})'.format(arg=arg) for arg in queryargs)))
+                urlargs=', '.join('{arg}=self.urlquote({arg})'.format(arg=arg) for arg in urlargs)))
 
             if datamethod:
                 outfile.write('{i}{i}_all_data_args = {{{args}}}\n'.format(

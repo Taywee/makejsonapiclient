@@ -2,11 +2,11 @@
 
 from setuptools import setup
 
-version = '1.0.4'
+version = '1.2.0'
 
 setup(name='makerestapiclient',
     version=version,
-    description="Simple python utility to build a python client library for interfacing with a REST API",
+    description="Simple python utility to build a python client class for interfacing with a REST API",
     classifiers=[
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
