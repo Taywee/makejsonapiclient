@@ -2,11 +2,11 @@
 
 from setuptools import setup
 
-version = '0.0.3'
+version = '1.0.1'
 
-setup(name='makejsonapiclient',
+setup(name='makerestapiclient',
     version=version,
-    description="Simple python utility to build a python client library for interfacing with a JSON API",
+    description="Simple python utility to build a python client library for interfacing with a REST API",
     classifiers=[
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
@@ -21,16 +21,16 @@ setup(name='makejsonapiclient',
         ],
     entry_points={
         'console_scripts': [
-            'makejsonapiclient = makejsonapiclient.__main__:main',
+            'makerestapiclient = makerestapiclient.__main__:main',
             ]
         },
-    keywords='python http json management',
+    keywords='python http rest management',
     author='Taylor C. Richberger <tcr@absolute-performance.com>',
     author_email='tcr@absolute-performance.com',
-    url='https://github.com/Taywee/makejsonapiclient',
-    download_url='https://github.com/Taywee/makejsonapiclient',
+    url='https://github.com/Taywee/makerestapiclient',
+    download_url='https://github.com/Taywee/makerestapiclient',
     license='MIT',
-    packages=['makejsonapiclient'],
+    packages=['makerestapiclient'],
     include_package_data=False,
     zip_safe=False,
     )

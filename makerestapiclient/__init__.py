@@ -3,13 +3,12 @@
 # Copyright © 2016 Taylor C. Richberger <taywee@gmx.com>
 # This code is released under the license described in the LICENSE file
 
-import json
 import re
 import sys
 
 _formatpattern = re.compile(r'\{([a-zA-Z]\w*)\}')
 
-def make_json_api_client(
+def make_rest_api_client(
     api: list,
     outfile = sys.stdout,
     classname: str = "Client",
@@ -17,14 +16,14 @@ def make_json_api_client(
     defaultclass: str = None,
     indent: str = '    ',
     withcontext: bool = False,
+    prefix: str = '',
     ):
 
     if imports:
         outfile.writelines('{}\n'.format(imp.strip()) for imp in imports)
 
     outfile.write('\n')
-    outfile.write('''from . import urlquote
-
+    outfile.write('''
 class {name}(object):
 {i}_NO_VALUE = object()
 {i}
@@ -36,6 +35,7 @@ class {name}(object):
 {i}{i}{i}username=username,
 {i}{i}{i}password=password,
 {i}{i}{i})
+{i}{i}self.urlquote = httpclass.urlquote
 '''.format(
             name=classname,
             defaultclass=(' = {}'.format(defaultclass) if defaultclass else ''),
@@ -77,18 +77,18 @@ class {name}(object):
         if endpoint.get('methods'):
             methods = frozenset(endpoint['methods'])
         else:
-            if endpoint.get('json-args') or endpoint.get('json-options'):
+            if endpoint.get('data-args') or endpoint.get('data-options'):
                 methods = frozenset({'GET', 'PUT', 'DELETE'})
             else:
                 methods = frozenset(('GET',))
 
-        json_args = endpoint.get('json-args', [])
-        json_options = endpoint.get('json-options', [])
+        data_args = endpoint.get('data-args', [])
+        data_options = endpoint.get('data-options', [])
 
         defaults = endpoint['defaults'] if 'defaults' in endpoint else dict()
 
         for method in methods:
-            jsonmethod = method in {'PUT', 'POST'}
+            datamethod = method in {'PUT', 'POST'}
             usedvars = set()
 
             defname = '{meth}_{name}'.format(meth=method.lower(), name=basename.lower().replace('-', '_'))
@@ -96,17 +96,17 @@ class {name}(object):
 
             for arg in queryargs:
                 if arg not in usedvars:
-                    argitem = arg
+                    argitem = arg.lower().replace('-', '_')
                     if arg in defaults:
                         argitem += ' = {}'.format(repr(defaults[arg]))
 
                     args.append(argitem)
                     usedvars.add(arg)
 
-            if jsonmethod:
-                for arg in json_args:
+            if datamethod:
+                for arg in data_args:
                     if arg not in usedvars:
-                        argitem = arg
+                        argitem = arg.lower().replace('-', '_')
                         if arg in defaults:
                             argitem += ' = {}'.format(repr(defaults[arg]))
 
@@ -114,28 +114,32 @@ class {name}(object):
                         usedvars.add(arg)
 
 
-                for option in json_options:
+                for option in data_options:
                     if option not in usedvars:
-                        optitem = option
+                        optitem = option.lower().replace('-', '_')
                         if optitem in defaults:
                             optitem += ' = {}'.format(repr(defaults[option]))
                         else:
-                            optitem += ' = self._NO_VALUE'
+                            optitem += ' = _NO_VALUE'
 
                         args.append(optitem)
                         usedvars.add(option)
 
             outfile.write('\n{i}def {name}({args}):\n'.format(i=indent, name=defname, args=', '.join(args)))
-            outfile.write('{i}{i}_api_endpoint = "{endpoint}".format({queryargs})\n'.format(
-                i=indent,
-                endpoint=endpoint['endpoint'],
-                queryargs=', '.join('{arg}=urlquote({arg})'.format(arg=arg) for arg in queryargs)))
+            if 'description' in endpoint:
+                outfile.write("{i}{i}'''{description}'''\n\n".format(i=indent, description=endpoint['description']))
 
-            if jsonmethod:
-                outfile.write('{i}{i}_all_json_args = {{{args}}}\n'.format(
+            outfile.write('{i}{i}_api_endpoint = "{prefix}{endpoint}".format({queryargs})\n'.format(
+                i=indent,
+                prefix=prefix,
+                endpoint=endpoint['endpoint'],
+                queryargs=', '.join('{arg}=self.urlquote({arg})'.format(arg=arg) for arg in queryargs)))
+
+            if datamethod:
+                outfile.write('{i}{i}_all_data_args = {{{args}}}\n'.format(
                     i=indent,
-                    args=', '.join("'{arg}': {arg}".format(arg=arg) for arg in (json_args + json_options))))
-                outfile.write('{i}{i}_json_args = {{k: v for k, v in _all_json_args.items() if v != self._NO_VALUE}}\n'.format(i=indent))
-                outfile.write("{i}{i}return self.connection.{method}(_api_endpoint, _json_args)\n".format(i=indent, method=method))
+                    args=', '.join("'{arg}': {var}".format(arg=arg, var=arg.lower().replace('-', '_')) for arg in (data_args + data_options))))
+                outfile.write('{i}{i}_data_args = {{k: v for k, v in _all_data_args.items() if v != self._NO_VALUE}}\n'.format(i=indent))
+                outfile.write("{i}{i}return self.connection.{method}(endpoint=_api_endpoint, data=_data_args)\n".format(i=indent, method=method))
             else:
-                outfile.write("{i}{i}return self.connection.{method}(_api_endpoint)\n".format(i=indent, method=method))
+                outfile.write("{i}{i}return self.connection.{method}(endpoint=_api_endpoint)\n".format(i=indent, method=method))

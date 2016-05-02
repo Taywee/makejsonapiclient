@@ -7,17 +7,18 @@ import argparse
 import json
 import sys
 
-from . import make_json_api_client
+from . import make_rest_api_client
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate a python API class to interface with some json API")
-    parser.add_argument('-i', '--input', help="Input JSON API file, defaults to stdin")
-    parser.add_argument('-o', '--output', help="Output python file path, defaults to stdout")
-    parser.add_argument('-c', '--classname', help="API class name, defaults to %(default)s", default="Client")
+    parser = argparse.ArgumentParser(description="Generate a python API class to interface with some REST API")
+    parser.add_argument('--indent', help="Indenting string.  Defaults to '\\t'", default='\t')
     parser.add_argument('-C', '--with-context', help="Generate context managers for the class (defers to the connection context managers)", action='store_true')
     parser.add_argument('-I', '--imports', help="Import statements.  May be specified multiple times", action='append', default=[])
-    parser.add_argument('--indent', help="Indenting string.  Defaults to '\\t'", default='\t')
+    parser.add_argument('-c', '--classname', help="API class name, defaults to %(default)s", default="Client")
     parser.add_argument('-d', '--default-http-class', help="Default http class.  Without this, you will be required to specify your own")
+    parser.add_argument('-i', '--input', help="Input JSON API file, defaults to stdin")
+    parser.add_argument('-o', '--output', help="Output python file path, defaults to stdout")
+    parser.add_argument('-p', '--prefix', help="API prefix, if necessary (needs any necessary slashes explicitly defined, default is %(default)s)", default="api/")
     args = parser.parse_args()
 
     if args.input is None:
@@ -31,7 +32,7 @@ def main():
         output = open(args.output, 'r')
 
     with input as i, output as o:
-        make_json_api_client(
+        make_rest_api_client(
             api=json.load(input),
             outfile=o,
             classname=args.classname,
@@ -39,6 +40,7 @@ def main():
             defaultclass=args.default_http_class,
             indent=args.indent,
             withcontext=args.with_context,
+            prefix=args.prefix,
             )
 
 if __name__ == '__main__':
