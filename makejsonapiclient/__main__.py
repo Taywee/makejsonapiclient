@@ -7,34 +7,7 @@ import argparse
 import json
 import sys
 
-def make_json_api_client(
-    api: list,
-    outfile = sys.stdout,
-    classname: str = "Client",
-    imports: list = None,
-    defaultclass: str = None,
-    indent: str = '    ',
-    ):
-
-    if imports:
-        outfile.writelines('{}\n'.format(imp.strip()) for imp in imports)
-    outfile.write('\n')
-    outfile.write('''class {name}(object):
-{i}def __init__(self, scheme, host, port, username, password, httpclass{defaultclass}):
-{i}{i}self.connection = httpclass(
-{i}{i}{i}scheme=scheme,
-{i}{i}{i}host=host,
-{i}{i}{i}port=port,
-{i}{i}{i}username=username,
-{i}{i}{i}password=password,
-{i}{i}{i})
-'''.format(
-            name=classname,
-            defaultclass=(' = {}'.format(defaultclass) if defaultclass else ''),
-            i=indent,
-            )
-        )
-    outfile.write('\n')
+from . import make_json_api_client
 
 def main():
     parser = argparse.ArgumentParser(description="Generate a python API class to interface with some json API")
