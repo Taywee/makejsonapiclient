@@ -32,6 +32,7 @@ setup(name='makerestapiclient',
     download_url='https://github.com/Taywee/makerestapiclient',
     license='MIT',
     packages=['makerestapiclient'],
+    install_requires=['jinja2'],
     include_package_data=False,
     zip_safe=False,
     )

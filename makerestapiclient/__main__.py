@@ -7,7 +7,7 @@ import argparse
 import json
 import sys
 
-from . import make_rest_api_client
+from makerestapiclient.makerestapiclient import make_rest_api_client
 
 def main():
     parser = argparse.ArgumentParser(description="Generate a python API class to interface with some REST API")
