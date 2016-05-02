@@ -14,6 +14,7 @@ def main():
     parser.add_argument('-i', '--input', help="Input JSON API file, defaults to stdin")
     parser.add_argument('-o', '--output', help="Output python file path, defaults to stdout")
     parser.add_argument('-c', '--classname', help="API class name, defaults to %(default)s", default="Client")
+    parser.add_argument('-C', '--with-context', help="Generate context managers for the class (defers to the connection context managers)", action='store_true')
     parser.add_argument('-I', '--imports', help="Import statements.  May be specified multiple times", action='append', default=[])
     parser.add_argument('--indent', help="Indenting string.  Defaults to '\\t'", default='\t')
     parser.add_argument('-d', '--default-http-class', help="Default http class.  Without this, you will be required to specify your own")
@@ -37,6 +38,7 @@ def main():
             imports=args.imports,
             defaultclass=args.default_http_class,
             indent=args.indent,
+            withcontext=args.with_context,
             )
 
 if __name__ == '__main__':
