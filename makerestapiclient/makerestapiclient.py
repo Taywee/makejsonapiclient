@@ -24,9 +24,12 @@ def make_rest_api_client(
     if not imports:
         imports = []
 
+
     head_template = pystache.parse(str(pkg_resources.resource_string('makerestapiclient', 'templates/head.mustache'), 'utf-8'))
     endpoint_template = pystache.parse(str(pkg_resources.resource_string('makerestapiclient', 'templates/endpoint.mustache'), 'utf-8'))
-    stache = pystache.Renderer(escape=lambda u: u,)
+    stache = pystache.Renderer(
+        escape=lambda u: u,
+        partials={key: str(pkg_resources.resource_string('makerestapiclient', 'templates/{partial}.mustache'.format(partial=key)), 'utf-8').strip() for key in ('dict', 'arglist')})
 
     outfile.write(stache.render(head_template, {'imports': imports, 'classname': classname, 'httpclass': defaultclass, 'context': withcontext}))
 
@@ -74,14 +77,15 @@ def make_rest_api_client(
 
             if urlargs:
                 params['needformat'] = True
-                params['urlargs'] = ', '.join('{arg}=self.urlquote({arg})'.format(arg=arg) for arg in urlargs)
+                params['urlargs'] = {'args': tuple({'name': arg, 'value': 'self.urlquote({arg})'.format(arg=arg), 'comma': True} for arg in urlargs)}
+                params['urlargs']['args'][-1]['comma'] = False
 
             if method in {'PUT', 'POST'}:
                 getitems(args=data_args, defaults=defaults, arglist=args)
                 getitems(args=data_options, defaults=defaults, arglist=args, mandatory=False)
 
                 if data_args or data_options:
-                    params['data'] = {'args': [{'key': repr(arg), 'value': arg.lower().replace('-', '_'), 'comma': True} for arg in (data_args + data_options)]}
+                    params['data'] = {'args': tuple({'key': repr(arg), 'value': arg.lower().replace('-', '_'), 'comma': True} for arg in (data_args + data_options))}
                     params['data']['args'][-1]['comma'] = False
 
             if query_args or query_options:
