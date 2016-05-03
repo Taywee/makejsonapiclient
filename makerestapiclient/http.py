@@ -50,10 +50,16 @@ class HTTP(object):
         request = Request(url=urlunparse((self.scheme, self.host, endpoint, '', '', '')), method='DELETE', headers={'Content-Type': 'application/json'})
         return makerequest(self.opener, request)
 
-    def PUT(self, endpoint, data):
+    def PUT(self, endpoint, data=None):
+        if data is None:
+            data = dict()
+
         request = Request(url=urlunparse((self.scheme, self.host, endpoint, '', '', '')), data=bytes(json.dumps(data), 'utf-8'), method='PUT', headers={'Content-Type': 'application/json'})
         return makerequest(self.opener, request)
 
-    def POST(self, endpoint, data):
+    def POST(self, endpoint, data=None):
+        if data is None:
+            data = dict()
+
         request = Request(url=urlunparse((self.scheme, self.host, endpoint, '', '', '')), data=bytes(json.dumps(data), 'utf-8'), method='POST', headers={'Content-Type': 'application/json'})
         return makerequest(self.opener, request)

@@ -45,7 +45,7 @@ def make_rest_api_client(
             if endpoint.get('data-args') or endpoint.get('data-options'):
                 methods = frozenset({'GET', 'PUT', 'DELETE'})
             else:
-                methods = frozenset(('GET',))
+                methods = frozenset({'GET',})
 
         data_args = endpoint.get('data-args', [])
         data_options = endpoint.get('data-options', [])
@@ -57,68 +57,37 @@ def make_rest_api_client(
         for method in methods:
             usedvars = set()
 
-            defname = '{meth}_{name}'.format(meth=method.lower(), name=basename.lower().replace('-', '_'))
             args = ['self']
 
-            for arg in urlargs:
-                if arg not in usedvars:
-                    argitem = arg.lower().replace('-', '_')
-                    if arg in defaults:
-                        argitem += ' = {}'.format(repr(defaults[arg]))
-
-                    args.append(argitem)
-                    usedvars.add(arg)
-
-            for arg in query_args:
-                if arg not in usedvars:
-                    argitem = arg.lower().replace('-', '_')
-                    if arg in defaults:
-                        argitem += ' = {}'.format(repr(defaults[arg]))
-
-                    args.append(argitem)
-                    usedvars.add(arg)
-
-            for option in query_options:
-                if option not in usedvars:
-                    optitem = option.lower().replace('-', '_')
-                    if optitem in defaults:
-                        optitem += ' = {}'.format(repr(defaults[option]))
-                    else:
-                        optitem += ' = _NO_VALUE'
-
-                    args.append(optitem)
-                    usedvars.add(option)
+            getitems(args=urlargs, usedvars=usedvars, defaults=defaults, arglist=args)
+            getitems(args=query_args, usedvars=usedvars, defaults=defaults, arglist=args)
+            getitems(args=query_options, usedvars=usedvars, defaults=defaults, arglist=args, mandatory=False)
 
             if method in {'PUT', 'POST'}:
-                for arg in data_args:
-                    if arg not in usedvars:
-                        argitem = arg.lower().replace('-', '_')
-                        if arg in defaults:
-                            argitem += ' = {}'.format(repr(defaults[arg]))
-
-                        args.append(argitem)
-                        usedvars.add(arg)
-
-
-                for option in data_options:
-                    if option not in usedvars:
-                        optitem = option.lower().replace('-', '_')
-                        if optitem in defaults:
-                            optitem += ' = {}'.format(repr(defaults[option]))
-                        else:
-                            optitem += ' = _NO_VALUE'
-
-                        args.append(optitem)
-                        usedvars.add(option)
+                getitems(args=data_args, usedvars=usedvars, defaults=defaults, arglist=args)
+                getitems(args=data_args, usedvars=usedvars, defaults=defaults, arglist=args, mandatory=False)
 
             outfile.write(endpoint_template.render(
-                name=defname,
-                arglist=', '.join(args),
+                name=basename.lower().replace('-', '_'),
+                arglist=args,
                 description=endpoint.get('description'),
-                all_query_args={arg: arg.lower().replace('-', '_') for arg in (query_args + query_options)},
+                all_query_args=(query_args + query_options),
                 prefix=prefix,
                 endpoint=endpoint['endpoint'],
                 urlargs=', '.join('{arg}=self.urlquote({arg})'.format(arg=arg) for arg in urlargs),
-                all_data_args={arg: arg.lower().replace('-', '_') for arg in (data_args + data_options)},
+                all_data_args=(data_args + data_options),
                 method=method,
                 ))
+
+def getitems(args, usedvars, defaults, arglist, mandatory=True):
+    for arg in args:
+        if arg not in usedvars:
+            argitem = arg.lower().replace('-', '_')
+
+            if arg in defaults:
+                argitem += ' = {}'.format(repr(defaults[arg]))
+            elif not mandatory:
+                argitem = ' = _NO_VALUE'
+            
+            arglist.append(argitem)
+            usedvars.add(arg)
