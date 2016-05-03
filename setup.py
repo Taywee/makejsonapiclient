@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-version = '1.3.4'
+version = '1.4.0'
 
 setup(name='makerestapiclient',
     version=version,
@@ -33,9 +33,9 @@ setup(name='makerestapiclient',
     license='MIT',
     packages=['makerestapiclient'],
     package_data={
-        'makerestapiclient': ['templates/*.py'],
+        'makerestapiclient': ['templates/*.mustache'],
         },
-    install_requires=['jinja2'],
+    install_requires=['setuptools'],
     include_package_data=False,
     zip_safe=False,
     )

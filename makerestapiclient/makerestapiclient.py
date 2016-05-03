@@ -6,7 +6,8 @@
 import re
 import sys
 
-from jinja2 import Environment, PackageLoader
+import pystache
+import pkg_resources
 
 _formatpattern = re.compile(r'\{([a-zA-Z]\w*)\}')
 
@@ -23,10 +24,11 @@ def make_rest_api_client(
     if not imports:
         imports = []
 
-    env = Environment(loader=PackageLoader('makerestapiclient', 'templates'))
-    head = env.get_template('head.py')
-    endpoint_template = env.get_template('endpoint.py')
-    outfile.write(head.render(imports=imports, classname=classname, httpclass=defaultclass, withcontext=withcontext))
+    head_template = pystache.parse(str(pkg_resources.resource_string('makerestapiclient', 'templates/head.mustache'), 'utf-8'))
+    endpoint_template = pystache.parse(str(pkg_resources.resource_string('makerestapiclient', 'templates/endpoint.mustache'), 'utf-8'))
+    stache = pystache.Renderer(escape=lambda u: u,)
+
+    outfile.write(stache.render(head_template, {'imports': imports, 'classname': classname, 'httpclass': defaultclass, 'context': withcontext}))
 
     # Build the API endpoint
     for endpoint in api:
@@ -55,33 +57,43 @@ def make_rest_api_client(
         defaults = endpoint['defaults'] if 'defaults' in endpoint else dict()
 
         for method in methods:
-            usedvars = set()
+            params = {
+                'smallmethod': method.lower(),
+                'name': basename.lower().replace('-', '_'),
+                'description': endpoint.get('description', False),
+                'prefix': prefix,
+                'endpoint': endpoint['endpoint'],
+                'method': method,
+                }
 
             args = ['self']
 
-            getitems(args=urlargs, usedvars=usedvars, defaults=defaults, arglist=args)
-            getitems(args=query_args, usedvars=usedvars, defaults=defaults, arglist=args)
-            getitems(args=query_options, usedvars=usedvars, defaults=defaults, arglist=args, mandatory=False)
+            getitems(args=urlargs, defaults=defaults, arglist=args)
+            if urlargs:
+                params['needformat'] = True
+                params['urlargs'] = ', '.join('{arg}=self.urlquote({arg})'.format(arg=arg) for arg in urlargs)
+
+            getitems(args=query_args, defaults=defaults, arglist=args)
+            getitems(args=query_options, defaults=defaults, arglist=args, mandatory=False)
 
             if method in {'PUT', 'POST'}:
-                getitems(args=data_args, usedvars=usedvars, defaults=defaults, arglist=args)
-                getitems(args=data_args, usedvars=usedvars, defaults=defaults, arglist=args, mandatory=False)
+                getitems(args=data_args, defaults=defaults, arglist=args)
+                getitems(args=data_options, defaults=defaults, arglist=args, mandatory=False)
 
-            outfile.write(endpoint_template.render(
-                name=basename.lower().replace('-', '_'),
-                arglist=args,
-                description=endpoint.get('description'),
-                all_query_args=(query_args + query_options),
-                prefix=prefix,
-                endpoint=endpoint['endpoint'],
-                urlargs=', '.join('{arg}=self.urlquote({arg})'.format(arg=arg) for arg in urlargs),
-                all_data_args=(data_args + data_options),
-                method=method,
-                ))
+                if data_args or data_options:
+                    params['data'] = {'args': [{'key': repr(arg), 'value': arg.lower().replace('-', '_')} for arg in (data_args + data_options)]}
 
-def getitems(args, usedvars, defaults, arglist, mandatory=True):
+            if query_args or query_options:
+                params['query'] = {'args': [{'key': repr(arg), 'value': arg.lower().replace('-', '_')} for arg in (query_args + query_options)]}
+                params['needformat'] = True
+
+            params['arglist'] = ', '.join(args)
+
+            outfile.write(stache.render(endpoint_template, params))
+
+def getitems(args, defaults, arglist, mandatory=True):
     for arg in args:
-        if arg not in usedvars:
+        if arg not in arglist:
             argitem = arg.lower().replace('-', '_')
 
             if arg in defaults:
@@ -90,4 +102,3 @@ def getitems(args, usedvars, defaults, arglist, mandatory=True):
                 argitem += ' = _NO_VALUE'
             
             arglist.append(argitem)
-            usedvars.add(arg)

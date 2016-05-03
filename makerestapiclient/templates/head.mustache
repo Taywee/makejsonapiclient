@@ -1,11 +1,11 @@
-{% for i in imports %}
-{{ i }}
-{% endfor %}
+{{#imports}}
+{{.}}
+{{/imports}}
 
-class {{ classname }}(object):
+class {{classname}}(object):
     _NO_VALUE = object()
 
-    def __init__(self, scheme, host, port, username, password, httpclass{% if httpclass %} = {{ httpclass }}{% endif %}):
+    def __init__(self, scheme, host, port, username, password, httpclass{{#httpclass}} = {{.}}{{/httpclass}}):
         self.connection = httpclass(
             scheme=scheme,
             host=host,
@@ -16,7 +16,7 @@ class {{ classname }}(object):
         self.urlquote = httpclass.urlquote
         self.queryencode = httpclass.queryencode
 
-{% if withcontext %}
+{{#context}}
     def __enter__(self):
         self._old_connection = self.connection
         self.connection = self.connection.__enter__()
@@ -26,6 +26,4 @@ class {{ classname }}(object):
         self._old_connection.__exit__(type, value, traceback)
         self.connection = self._old_connection
         del self._old_connection
-{% endif %}
-
-
+{{/context}}
