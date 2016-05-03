@@ -16,7 +16,7 @@
 
         {{#data}}
         _all_data_args = { {{#args}}{{key}}: {{value}}, {{/args}} }
-        _data_args = {k: v for k, v in _all_query_args.items() if v != self._NO_VALUE}
+        _data_args = {k: v for k, v in _all_data_args.items() if v != self._NO_VALUE}
         {{/data}}
 
         return self.connection.{{method}}(endpoint=_api_endpoint{{#data}}, data=_data_args{{/data}})
