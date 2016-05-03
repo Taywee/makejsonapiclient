@@ -11,7 +11,6 @@ from makerestapiclient.makerestapiclient import make_rest_api_client
 
 def main():
     parser = argparse.ArgumentParser(description="Generate a python API class to interface with some REST API")
-    parser.add_argument('--indent', help="Indenting string.  Defaults to '\\t'", default='\t')
     parser.add_argument('-C', '--with-context', help="Generate context managers for the class (defers to the connection context managers)", action='store_true')
     parser.add_argument('-I', '--imports', help="Import statements.  May be specified multiple times", action='append', default=[])
     parser.add_argument('-c', '--classname', help="API class name, defaults to %(default)s", default="Client")
@@ -38,7 +37,6 @@ def main():
             classname=args.classname,
             imports=args.imports,
             defaultclass=args.default_http_class,
-            indent=args.indent,
             withcontext=args.with_context,
             prefix=args.prefix,
             )

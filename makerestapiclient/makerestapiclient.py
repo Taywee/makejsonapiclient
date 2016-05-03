@@ -6,7 +6,7 @@
 import re
 import sys
 
-import pystache
+import chevron
 import pkg_resources
 
 _formatpattern = re.compile(r'\{([a-zA-Z]\w*)\}')
@@ -17,7 +17,6 @@ def make_rest_api_client(
     classname: str = "Client",
     imports: list = None,
     defaultclass: str = None,
-    indent: str = '    ',
     withcontext: bool = False,
     prefix: str = '',
     ):
@@ -25,13 +24,15 @@ def make_rest_api_client(
         imports = []
 
 
-    head_template = pystache.parse(str(pkg_resources.resource_string('makerestapiclient', 'templates/head.mustache'), 'utf-8'))
-    endpoint_template = pystache.parse(str(pkg_resources.resource_string('makerestapiclient', 'templates/endpoint.mustache'), 'utf-8'))
-    stache = pystache.Renderer(
-        escape=lambda u: u,
-        partials={key: str(pkg_resources.resource_string('makerestapiclient', 'templates/{partial}.mustache'.format(partial=key)), 'utf-8').strip() for key in ('dict', 'arglist')})
+    head_template = str(pkg_resources.resource_string('makerestapiclient', 'templates/head.mustache'), 'utf-8')
+    endpoint_template = str(pkg_resources.resource_string('makerestapiclient', 'templates/endpoint.mustache'), 'utf-8')
+    partials={key: str(pkg_resources.resource_string('makerestapiclient', 'templates/{partial}.mustache'.format(partial=key)), 'utf-8').strip() for key in ('dict', 'arglist')}
 
-    outfile.write(stache.render(head_template, {'imports': imports, 'classname': classname, 'httpclass': defaultclass, 'context': withcontext}))
+    outfile.write(chevron.render(
+        template=head_template,
+        data={'imports': imports, 'classname': classname, 'httpclass': defaultclass, 'context': withcontext},
+        partials_dict=partials,
+        ))
 
     # Build the API endpoint
     for endpoint in api:
@@ -77,7 +78,7 @@ def make_rest_api_client(
 
             if urlargs:
                 params['needformat'] = True
-                params['urlargs'] = {'args': tuple({'name': arg, 'value': 'self.urlquote({arg})'.format(arg=arg), 'comma': True} for arg in urlargs)}
+                params['urlargs'] = {'args': [{'name': arg, 'value': 'self.urlquote({arg})'.format(arg=arg), 'comma': True} for arg in urlargs]}
                 params['urlargs']['args'][-1]['comma'] = False
 
             if method in {'PUT', 'POST'}:
@@ -85,7 +86,7 @@ def make_rest_api_client(
                 getitems(args=data_options, defaults=defaults, arglist=args, mandatory=False)
 
                 if data_args or data_options:
-                    params['data'] = {'args': tuple({'key': repr(arg), 'value': arg.lower().replace('-', '_'), 'comma': True} for arg in (data_args + data_options))}
+                    params['data'] = {'args': [{'key': repr(arg), 'value': arg.lower().replace('-', '_'), 'comma': True} for arg in (data_args + data_options)]}
                     params['data']['args'][-1]['comma'] = False
 
             if query_args or query_options:
@@ -96,7 +97,11 @@ def make_rest_api_client(
             args[-1]['comma'] = False
             params['args'] = args
 
-            outfile.write(stache.render(endpoint_template, params))
+            outfile.write(chevron.render(
+                template=endpoint_template,
+                data=params,
+                partials_dict=partials,
+                ))
 
 def getitems(args, defaults, arglist, mandatory=True):
     for arg in args:
