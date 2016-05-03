@@ -66,15 +66,15 @@ def make_rest_api_client(
                 'method': method,
                 }
 
-            args = ['self']
+            args = [{'arg': 'self', 'name': 'self'}]
 
             getitems(args=urlargs, defaults=defaults, arglist=args)
+            getitems(args=query_args, defaults=defaults, arglist=args)
+            getitems(args=query_options, defaults=defaults, arglist=args, mandatory=False)
+
             if urlargs:
                 params['needformat'] = True
                 params['urlargs'] = ', '.join('{arg}=self.urlquote({arg})'.format(arg=arg) for arg in urlargs)
-
-            getitems(args=query_args, defaults=defaults, arglist=args)
-            getitems(args=query_options, defaults=defaults, arglist=args, mandatory=False)
 
             if method in {'PUT', 'POST'}:
                 getitems(args=data_args, defaults=defaults, arglist=args)
@@ -87,18 +87,18 @@ def make_rest_api_client(
                 params['query'] = {'args': [{'key': repr(arg), 'value': arg.lower().replace('-', '_')} for arg in (query_args + query_options)]}
                 params['needformat'] = True
 
-            params['arglist'] = ', '.join(args)
+            params['args'] = args
 
             outfile.write(stache.render(endpoint_template, params))
 
 def getitems(args, defaults, arglist, mandatory=True):
     for arg in args:
-        if arg not in arglist:
-            argitem = arg.lower().replace('-', '_')
+        if arg not in (item['arg'] for item in arglist):
+            argitem = {'arg': arg, 'name': arg.lower().replace('-', '_')}
 
             if arg in defaults:
-                argitem += ' = {}'.format(repr(defaults[arg]))
+                argitem['value'] = repr(defaults[arg])
             elif not mandatory:
-                argitem += ' = _NO_VALUE'
+                argitem['value'] = ' = _NO_VALUE'
             
             arglist.append(argitem)

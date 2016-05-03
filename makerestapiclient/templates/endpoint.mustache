@@ -1,5 +1,5 @@
 
-    def {{smallmethod}}_{{name}}({{arglist}}):
+    def {{smallmethod}}_{{name}}({{#args}}{{name}}{{#value}} = {{.}}{{/value}}, {{/args}}):
         {{#description}}
         '''{{.}}'''
         {{/description}}
