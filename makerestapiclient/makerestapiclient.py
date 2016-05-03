@@ -66,7 +66,7 @@ def make_rest_api_client(
                 'method': method,
                 }
 
-            args = [{'arg': 'self', 'name': 'self'}]
+            args = [{'arg': 'self', 'name': 'self', 'comma': True}]
 
             getitems(args=urlargs, defaults=defaults, arglist=args)
             getitems(args=query_args, defaults=defaults, arglist=args)
@@ -81,12 +81,15 @@ def make_rest_api_client(
                 getitems(args=data_options, defaults=defaults, arglist=args, mandatory=False)
 
                 if data_args or data_options:
-                    params['data'] = {'args': [{'key': repr(arg), 'value': arg.lower().replace('-', '_')} for arg in (data_args + data_options)]}
+                    params['data'] = {'args': [{'key': repr(arg), 'value': arg.lower().replace('-', '_'), 'comma': True} for arg in (data_args + data_options)]}
+                    params['data']['args'][-1]['comma'] = False
 
             if query_args or query_options:
-                params['query'] = {'args': [{'key': repr(arg), 'value': arg.lower().replace('-', '_')} for arg in (query_args + query_options)]}
+                params['query'] = {'args': [{'key': repr(arg), 'value': arg.lower().replace('-', '_'), 'comma': True} for arg in (query_args + query_options)]}
+                params['query']['args'][-1]['comma'] = False
                 params['needformat'] = True
 
+            args[-1]['comma'] = False
             params['args'] = args
 
             outfile.write(stache.render(endpoint_template, params))
@@ -94,11 +97,11 @@ def make_rest_api_client(
 def getitems(args, defaults, arglist, mandatory=True):
     for arg in args:
         if arg not in (item['arg'] for item in arglist):
-            argitem = {'arg': arg, 'name': arg.lower().replace('-', '_')}
+            argitem = {'arg': arg, 'name': arg.lower().replace('-', '_'), 'comma': True}
 
             if arg in defaults:
                 argitem['value'] = repr(defaults[arg])
             elif not mandatory:
-                argitem['value'] = ' = _NO_VALUE'
+                argitem['value'] = '_NO_VALUE'
             
             arglist.append(argitem)
