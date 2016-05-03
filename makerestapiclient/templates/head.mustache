@@ -5,14 +5,8 @@
 class {{classname}}(object):
     _NO_VALUE = object()
 
-    def __init__(self, scheme, host, port, username, password, httpclass{{#httpclass}} = {{.}}{{/httpclass}}):
-        self.connection = httpclass(
-            scheme=scheme,
-            host=host,
-            port=port,
-            username=username,
-            password=password,
-            )
+    def __init__(self, httpclass{{#httpclass}} = {{.}}{{/httpclass}}, **kwargs):
+        self.connection = httpclass(**kwargs)
         self.urlquote = httpclass.urlquote
         self.queryencode = httpclass.queryencode
 
