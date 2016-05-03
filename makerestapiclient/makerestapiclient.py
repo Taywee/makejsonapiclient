@@ -40,12 +40,12 @@ def make_rest_api_client(
 
         # Get or infer methods
         if endpoint.get('methods'):
-            methods = frozenset(endpoint['methods'])
+            methods = tuple(sorted(endpoint['methods']))
         else:
             if endpoint.get('data-args') or endpoint.get('data-options'):
-                methods = frozenset({'GET', 'PUT', 'DELETE'})
+                methods = ('DELETE', 'GET', 'PUT')
             else:
-                methods = frozenset({'GET',})
+                methods = ('GET',)
 
         data_args = endpoint.get('data-args', [])
         data_options = endpoint.get('data-options', [])

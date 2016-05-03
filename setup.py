@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-version = '1.3.3'
+version = '1.3.4'
 
 setup(name='makerestapiclient',
     version=version,
