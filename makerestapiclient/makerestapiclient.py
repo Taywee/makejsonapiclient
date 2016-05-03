@@ -87,7 +87,7 @@ def getitems(args, usedvars, defaults, arglist, mandatory=True):
             if arg in defaults:
                 argitem += ' = {}'.format(repr(defaults[arg]))
             elif not mandatory:
-                argitem = ' = _NO_VALUE'
+                argitem += ' = _NO_VALUE'
             
             arglist.append(argitem)
             usedvars.add(arg)
