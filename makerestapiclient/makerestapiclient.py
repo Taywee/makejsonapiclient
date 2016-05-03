@@ -6,6 +6,8 @@
 import re
 import sys
 
+from jinja2 import Environment, PackageLoader
+
 _formatpattern = re.compile(r'\{([a-zA-Z]\w*)\}')
 
 def make_rest_api_client(
@@ -18,51 +20,13 @@ def make_rest_api_client(
     withcontext: bool = False,
     prefix: str = '',
     ):
+    if not imports:
+        imports = []
 
-    if imports:
-        outfile.writelines('{}\n'.format(imp.strip()) for imp in imports)
-
-    outfile.write('\n')
-    outfile.write('''
-class {name}(object):
-{i}_NO_VALUE = object()
-{i}
-{i}def __init__(self, scheme, host, port, username, password, httpclass{defaultclass}):
-{i}{i}self.connection = httpclass(
-{i}{i}{i}scheme=scheme,
-{i}{i}{i}host=host,
-{i}{i}{i}port=port,
-{i}{i}{i}username=username,
-{i}{i}{i}password=password,
-{i}{i}{i})
-{i}{i}self.urlquote = httpclass.urlquote
-{i}{i}self.queryencode = httpclass.queryencode
-'''.format(
-            name=classname,
-            defaultclass=(' = {}'.format(defaultclass) if defaultclass else ''),
-            i=indent,
-            )
-        )
-
-    if withcontext:
-        outfile.write('''
-{i}def __enter__(self):
-{i}{i}self._old_connection = self.connection
-{i}{i}self.connection = self.connection.__enter__()
-{i}{i}return self
-
-{i}def __exit__(self, type, value, traceback):
-{i}{i}self._old_connection.__exit__(type, value, traceback)
-{i}{i}self.connection = self._old_connection
-{i}{i}del self._old_connection
-'''.format(
-            name=classname,
-            defaultclass=(' = {}'.format(defaultclass) if defaultclass else ''),
-            i=indent,
-            )
-        )
-
-    outfile.write('\n')
+    env = Environment(loader=PackageLoader('makerestapiclient', 'templates'))
+    head = env.get_template('head.py')
+    endpoint_template = env.get_template('endpoint.py')
+    outfile.write(head.render(imports=imports, classname=classname, httpclass=defaultclass, withcontext=withcontext))
 
     # Build the API endpoint
     for endpoint in api:
@@ -91,7 +55,6 @@ class {name}(object):
         defaults = endpoint['defaults'] if 'defaults' in endpoint else dict()
 
         for method in methods:
-            datamethod = method in {'PUT', 'POST'}
             usedvars = set()
 
             defname = '{meth}_{name}'.format(meth=method.lower(), name=basename.lower().replace('-', '_'))
@@ -126,7 +89,7 @@ class {name}(object):
                     args.append(optitem)
                     usedvars.add(option)
 
-            if datamethod:
+            if method in {'PUT', 'POST'}:
                 for arg in data_args:
                     if arg not in usedvars:
                         argitem = arg.lower().replace('-', '_')
@@ -148,34 +111,14 @@ class {name}(object):
                         args.append(optitem)
                         usedvars.add(option)
 
-            outfile.write('\n{i}def {name}({args}):\n'.format(i=indent, name=defname, args=', '.join(args)))
-            if 'description' in endpoint:
-                outfile.write("{i}{i}'''{description}'''\n\n".format(i=indent, description=endpoint['description']))
-
-            if query_args or query_options:
-                outfile.write('{i}{i}_all_query_args = {{{args}}}\n'.format(
-                    i=indent,
-                    args=', '.join("'{arg}': {var}".format(arg=arg, var=arg.lower().replace('-', '_')) for arg in (query_args + query_options))))
-                outfile.write('{i}{i}_query_args = {{k: v for k, v in _all_query_args.items() if v != self._NO_VALUE}}\n'.format(i=indent))
-                outfile.write('{i}{i}if _query_args:\n'.format(i=indent))
-                outfile.write('{i}{i}{i}_query_string = "?" + self.queryencode(_query_args)\n'.format(i=indent))
-                outfile.write('{i}{i}else:\n'.format(i=indent))
-                outfile.write('{i}{i}{i}_query_string = ""\n'.format(i=indent))
-            else:
-                outfile.write('{i}{i}_query_string = ""\n'.format(i=indent))
-
-
-            outfile.write('{i}{i}_api_endpoint = "{prefix}{endpoint}{{querystring}}".format(querystring=_query_string, {urlargs})\n'.format(
-                i=indent,
+            outfile.write(endpoint_template.render(
+                name=defname,
+                arglist=', '.join(args),
+                description=endpoint.get('description'),
+                all_query_args={arg: arg.lower().replace('-', '_') for arg in (query_args + query_options)},
                 prefix=prefix,
                 endpoint=endpoint['endpoint'],
-                urlargs=', '.join('{arg}=self.urlquote({arg})'.format(arg=arg) for arg in urlargs)))
-
-            if datamethod:
-                outfile.write('{i}{i}_all_data_args = {{{args}}}\n'.format(
-                    i=indent,
-                    args=', '.join("'{arg}': {var}".format(arg=arg, var=arg.lower().replace('-', '_')) for arg in (data_args + data_options))))
-                outfile.write('{i}{i}_data_args = {{k: v for k, v in _all_data_args.items() if v != self._NO_VALUE}}\n'.format(i=indent))
-                outfile.write("{i}{i}return self.connection.{method}(endpoint=_api_endpoint, data=_data_args)\n".format(i=indent, method=method))
-            else:
-                outfile.write("{i}{i}return self.connection.{method}(endpoint=_api_endpoint)\n".format(i=indent, method=method))
+                urlargs=', '.join('{arg}=self.urlquote({arg})'.format(arg=arg) for arg in urlargs),
+                all_data_args={arg: arg.lower().replace('-', '_') for arg in (data_args + data_options)},
+                method=method,
+                ))

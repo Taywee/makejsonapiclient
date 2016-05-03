@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-version = '1.2.3'
+version = '1.3.0'
 
 setup(name='makerestapiclient',
     version=version,
@@ -32,6 +32,9 @@ setup(name='makerestapiclient',
     download_url='https://github.com/Taywee/makerestapiclient',
     license='MIT',
     packages=['makerestapiclient'],
+    package_data={
+        'makerestapiclient': ['templates/*.py'],
+        },
     install_requires=['jinja2'],
     include_package_data=False,
     zip_safe=False,
