@@ -3,7 +3,7 @@
 # Copyright © 2016 Taylor C. Richberger <taywee@gmx.com>
 # This code is released under the license described in the LICENSE file
 
-from urllib.parse import urlparse, urlunparse, quote_plus, urlencode
+from urllib.parse import urlparse, urlunparse, quote, urlencode
 from urllib.request import Request, HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler, build_opener
 import json
 
@@ -18,7 +18,7 @@ def makerequest(opener, request):
 class HTTP(object):
     @staticmethod
     def urlquote(string):
-        return quote_plus(string)
+        return quote(string, safe='')
 
     @staticmethod
     def queryencode(query):
