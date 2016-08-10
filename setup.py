@@ -1,8 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 from setuptools import setup
 
-version = '2.0.2'
+version = '2.0.3'
 
 setup(name='makerestapiclient',
     version=version,
@@ -35,7 +35,10 @@ setup(name='makerestapiclient',
     package_data={
         'makerestapiclient': ['templates/*.mustache'],
         },
-    install_requires=['setuptools', 'chevron'],
-    include_package_data=False,
-    zip_safe=False,
+    install_requires=[
+        'setuptools',
+        'chevron',
+        'requests',
+        'six',
+        ],
     )

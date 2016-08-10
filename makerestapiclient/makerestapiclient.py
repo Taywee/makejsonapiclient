@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Copyright © 2016 Taylor C. Richberger <taywee@gmx.com>
 # This code is released under the license described in the LICENSE file
@@ -12,21 +12,21 @@ import pkg_resources
 _formatpattern = re.compile(r'\{([a-zA-Z]\w*)\}')
 
 def make_rest_api_client(
-    api: list,
-    outfile = sys.stdout,
-    classname: str = "Client",
-    imports: list = None,
-    defaultclass: str = None,
-    withcontext: bool = False,
-    prefix: str = '',
+    api,
+    outfile=sys.stdout,
+    classname="Client",
+    imports=None,
+    defaultclass=None,
+    withcontext=False,
+    prefix='',
     ):
     if not imports:
         imports = []
 
 
-    head_template = str(pkg_resources.resource_string('makerestapiclient', 'templates/head.mustache'), 'utf-8')
-    endpoint_template = str(pkg_resources.resource_string('makerestapiclient', 'templates/endpoint.mustache'), 'utf-8')
-    partials={key: str(pkg_resources.resource_string('makerestapiclient', 'templates/{partial}.mustache'.format(partial=key)), 'utf-8').strip() for key in ('dict', 'arglist')}
+    head_template = pkg_resources.resource_string('makerestapiclient', 'templates/head.mustache').decode('utf-8')
+    endpoint_template = pkg_resources.resource_string('makerestapiclient', 'templates/endpoint.mustache').decode('utf-8')
+    partials={key: pkg_resources.resource_string('makerestapiclient', 'templates/{partial}.mustache'.format(partial=key)).decode('utf-8').strip() for key in ('dict', 'arglist')}
 
     outfile.write(chevron.render(
         template=head_template,
