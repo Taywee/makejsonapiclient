@@ -2,6 +2,8 @@
 Simple python tool to build a REST API client from a json description file (or
 any other list of endpoints).
 
+## I wouldn't recommend using this project.  It works, and it's useable, but you're probably much better off using the OpenAPI specification to generate a client library.  [swagger-codegen](https://github.com/swagger-api/swagger-codegen) is one such project.
+
 # Install
 
 Like most packages, you can install this one by name:
